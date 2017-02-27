@@ -1,0 +1,167 @@
+Upland Exploratory Figures
+mswan
+
+February 24, 2017
+
+This is code I am using to generate a set of exploratory figures using the functional group views pulled from the Upland Database. Data represents 2007-2014 currently. Select each functional group and create dataframe, then generate figures using a function that can be grouped by ecosite to get one ecosite per figure. Selected for only plots that are in panels.
+
+set directories for figures and data
+
+data_dir <- file.path("C://Users//mswan//Documents//R//AnalysisWorkshop//", 'data')
+fig_dir<- file.path("C://Users//mswan//Documents//R//AnalysisWorkshop//Plots")
+Connect to sql and pull relevant data
+
+##this is currently reading csv. Go back to pulling view from database soon!
+
+fctgrp <- read.csv ("C://Users//mswan//Documents//R//AnalysisWorkshop//FctGrp_Plot.csv")
+
+
+conUpE <- odbcDriverConnect("driver=SQL Server;server=INPSCPN020019\\SQLEXPRESS;
+                            database=SCPN_UplandEvent;trusted_connection=yes;")
+
+
+fctgrp <- sqlFetch(conUpE, "dbo.FunctionalGroupsSummary_Plot", as.is=FALSE, 
+                 stringsAsFactors = FALSE)
+close(conUpE)
+Total Live Foliar by Year and Plot
+
+InPanel<-c("A", "B", "C")
+
+fctgrp_total <- fctgrp%>%
+  filter((FunctionalGroup %in% "TotalLiveFoliarCoverClass_10m"),(EventPanel %in% InPanel ))%>%
+  select(EcoSite, FunctionalGroup, CoverClassMidpoint_Plot_mn, Plot, EventYear, EventPanel)
+This is a function to create plots and paste them into directory with ecosite names.
+
+make_TFbyyear_plot <- function(x, figs_root=fig_dir) {
+  fig_name <- file.path(figs_root, paste0('TotalFoliarbyyear', x$EcoSite[1], '.png'))
+  ggplot(x,  aes(x=factor(EventYear), y=CoverClassMidpoint_Plot_mn
+                 , group=factor(Plot), color=factor(Plot))) + geom_point() + geom_line()+ theme(legend.text=element_text(size=5))
+  ggtitle("Total Live Cover", x$EcoSite[1])
+  ggsave(fig_name, width=6, height=4, units = "in")
+  data.frame(success=TRUE)
+}
+fctgrp_total %>%
+  group_by(EcoSite) %>%
+  do(make_TFbyyear_plot(.))
+## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?
+## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?
+## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?
+## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?
+## Source: local data frame [17 x 2]
+## Groups: EcoSite [17]
+## 
+##    EcoSite success
+##      <chr>   <lgl>
+## 1   AZRU_A    TRUE
+## 2   BAND_M    TRUE
+## 3   BAND_P    TRUE
+## 4   CHCU_S    TRUE
+## 5   GLCA_B    TRUE
+## 6   GLCA_H    TRUE
+## 7   GLCA_P    TRUE
+## 8   GRCA_M    TRUE
+## 9   GRCA_P    TRUE
+## 10  MEVE_L    TRUE
+## 11  MEVE_S    TRUE
+## 12  PEFO_C    TRUE
+## 13  PEFO_S    TRUE
+## 14  PETR_P    TRUE
+## 15  WACA_P    TRUE
+## 16  WUPA_L    TRUE
+## 17  WUPA_S    TRUE
+Perennial Grass by Year and Plot
+
+fctgrp_pergrass <- fctgrp%>%
+  filter((FunctionalGroup %in% "PerennialGrassCoverClass_10m"),(EventPanel %in% InPanel ))%>%
+  select(EcoSite, FunctionalGroup, CoverClassMidpoint_Plot_mn, Plot, EventYear, EventPanel)
+make_Gbyyear_plot <- function(x, figs_root=fig_dir) {
+  fig_name <- file.path(figs_root, paste0 ("Grassbyyear", x$EcoSite[1], ".png"))
+  ggplot(x,  aes(x=factor(EventYear), y=CoverClassMidpoint_Plot_mn
+                 , group=factor(Plot), color=factor(Plot))) + geom_point() + geom_line()+ theme(legend.text=element_text(size=5))
+  ggtitle("P Grass Cover", x$EcoSite[1])
+  ggsave(fig_name, width=8, height=4, units = "in")
+  data.frame(success=TRUE)
+}
+fctgrp_pergrass %>%
+  group_by(EcoSite) %>%
+  do(make_Gbyyear_plot(.))
+## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?
+## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?
+## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?
+## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?
+## Source: local data frame [17 x 2]
+## Groups: EcoSite [17]
+## 
+##    EcoSite success
+##      <chr>   <lgl>
+## 1   AZRU_A    TRUE
+## 2   BAND_M    TRUE
+## 3   BAND_P    TRUE
+## 4   CHCU_S    TRUE
+## 5   GLCA_B    TRUE
+## 6   GLCA_H    TRUE
+## 7   GLCA_P    TRUE
+## 8   GRCA_M    TRUE
+## 9   GRCA_P    TRUE
+## 10  MEVE_L    TRUE
+## 11  MEVE_S    TRUE
+## 12  PEFO_C    TRUE
+## 13  PEFO_S    TRUE
+## 14  PETR_P    TRUE
+## 15  WACA_P    TRUE
+## 16  WUPA_L    TRUE
+## 17  WUPA_S    TRUE
+Shrubs Cover by Year and Plot
+
+fctgrp_shrubs <- fctgrp%>%
+  filter((FunctionalGroup %in% "ShrubCoverClass_10m"),(EventPanel %in% InPanel ))%>%
+  select(EcoSite, FunctionalGroup, CoverClassMidpoint_Plot_mn, Plot, EventYear, EventPanel)
+make_Sbyyear_plot <- function(x, figs_root=fig_dir) {
+  fig_name <- file.path(figs_root, paste0 ("Shrubbyyear", x$EcoSite[1], ".png"))
+  ggplot(x,  aes(x=factor(EventYear), y=CoverClassMidpoint_Plot_mn
+                 , group=factor(Plot), color=factor(Plot)))+ geom_point() + geom_line() + theme(legend.text=element_text(size=5)) 
+  ggtitle("Shrub Cover", x$EcoSite[1])
+  ggsave(fig_name, width=8, height=4, units = "in")
+  data.frame(success=TRUE)
+}
+fctgrp_shrubs %>%
+  group_by(EcoSite) %>%
+  do(make_Sbyyear_plot(.))
+## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?
+## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?
+## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?
+## geom_path: Each group consists of only one observation. Do you need to
+## adjust the group aesthetic?
+## Source: local data frame [17 x 2]
+## Groups: EcoSite [17]
+## 
+##    EcoSite success
+##      <chr>   <lgl>
+## 1   AZRU_A    TRUE
+## 2   BAND_M    TRUE
+## 3   BAND_P    TRUE
+## 4   CHCU_S    TRUE
+## 5   GLCA_B    TRUE
+## 6   GLCA_H    TRUE
+## 7   GLCA_P    TRUE
+## 8   GRCA_M    TRUE
+## 9   GRCA_P    TRUE
+## 10  MEVE_L    TRUE
+## 11  MEVE_S    TRUE
+## 12  PEFO_C    TRUE
+## 13  PEFO_S    TRUE
+## 14  PETR_P    TRUE
+## 15  WACA_P    TRUE
+## 16  WUPA_L    TRUE
+## 17  WUPA_S    TRUE
