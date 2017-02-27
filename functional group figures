@@ -1,0 +1,168 @@
+---
+title: "Upland Exploratory Figures"
+author: "mswan"
+date: "February 24, 2017"
+output:
+  html_document: default
+  html_notebook: default
+---
+This is code I am using to generate a set of exploratory figures using the functional group views pulled from the Upland Database. Data represents 2007-2014 currently. Select each functional group and create dataframe, then generate figures using a function that can be grouped by ecosite to get one ecosite per figure. Selected for only plots that are in panels.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rmarkdown)
+library(RODBC)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(lme4)
+
+```
+set directories for figures and data
+```{r, set directories}
+data_dir <- file.path("C://Users//mswan//Documents//R//AnalysisWorkshop//", 'data')
+fig_dir<- file.path("C://Users//mswan//Documents//R//AnalysisWorkshop//Plots")
+```
+Connect to sql and pull relevant data
+```{r, get data}
+##this is currently reading csv. Go back to pulling view from database soon!
+
+fctgrp <- read.csv ("C://Users//mswan//Documents//R//AnalysisWorkshop//FctGrp_Plot.csv")
+
+
+conUpE <- odbcDriverConnect("driver=SQL Server;server=INPSCPN020019\\SQLEXPRESS;
+                            database=SCPN_UplandEvent;trusted_connection=yes;")
+
+
+fctgrp <- sqlFetch(conUpE, "dbo.FunctionalGroupsSummary_Plot", as.is=FALSE, 
+                 stringsAsFactors = FALSE)
+close(conUpE)
+
+```
+**Total Live Foliar by Year and Plot**
+```{r, create data frame of just total foliar cover}
+InPanel<-c("A", "B", "C")
+
+fctgrp_total <- fctgrp%>%
+  filter((FunctionalGroup %in% "TotalLiveFoliarCoverClass_10m"),(EventPanel %in% InPanel ))%>%
+  select(EcoSite, FunctionalGroup, CoverClassMidpoint_Plot_mn, Plot, EventYear, EventPanel)
+
+```
+This is a function to create plots and paste them into directory with ecosite names. 
+```{r, function to make and paste plots into directory}
+make_TFbyyear_plot <- function(x, figs_root=fig_dir) {
+  fig_name <- file.path(figs_root, paste0('TotalFoliarbyyear', x$EcoSite[1], '.png'))
+  ggplot(x,  aes(x=factor(EventYear), y=CoverClassMidpoint_Plot_mn
+                 , group=factor(Plot), color=factor(Plot))) + geom_point() + geom_line()+ theme(legend.text=element_text(size=5)) + ggtitle("Total Live Cover", x$EcoSite[1])
+  ggsave(fig_name, width=6, height=4, units = "in")
+  data.frame(success=TRUE)
+}
+```
+
+```{r, run function to generate plots}
+fctgrp_total %>%
+  group_by(EcoSite) %>%
+  do(make_TFbyyear_plot(.))
+```
+**Perennial Grass by Year and Plot**
+```{r, Create perennial grass only data frame}
+fctgrp_pergrass <- fctgrp%>%
+  filter((FunctionalGroup %in% "PerennialGrassCoverClass_10m"),(EventPanel %in% InPanel ))%>%
+  select(EcoSite, FunctionalGroup, CoverClassMidpoint_Plot_mn, Plot, EventYear, EventPanel)
+```
+
+
+```{r, function to generate and save grass plots}
+make_Gbyyear_plot <- function(x, figs_root=fig_dir) {
+  fig_name <- file.path(figs_root, paste0 ("Grassbyyear", x$EcoSite[1], ".png"))
+  ggplot(x,  aes(x=factor(EventYear), y=CoverClassMidpoint_Plot_mn
+                 , group=factor(Plot), color=factor(Plot))) + geom_point() + geom_line()+ theme(legend.text=element_text(size=5)) + ggtitle("P Grass Cover", x$EcoSite[1])
+  ggsave(fig_name, width=8, height=4, units = "in")
+  data.frame(success=TRUE)
+}
+```
+
+
+```{r, run  generate and save grass figures}
+fctgrp_pergrass %>%
+  group_by(EcoSite) %>%
+  do(make_Gbyyear_plot(.))
+
+```
+**Shrubs Cover by Year and Plot**
+```{r, Create shrub dataframe}
+fctgrp_shrubs <- fctgrp%>%
+  filter((FunctionalGroup %in% "ShrubCoverClass_10m"),(EventPanel %in% InPanel ))%>%
+  select(EcoSite, FunctionalGroup, CoverClassMidpoint_Plot_mn, Plot, EventYear, EventPanel)
+```
+
+
+```{r, Create function to generate and paste shrub figures to directory}
+make_Sbyyear_plot <- function(x, figs_root=fig_dir) {
+  fig_name <- file.path(figs_root, paste0 ("Shrubbyyear", x$EcoSite[1], ".png"))
+  ggplot(x,  aes(x=factor(EventYear), y=CoverClassMidpoint_Plot_mn
+                 , group=factor(Plot), color=factor(Plot)))+ geom_point() + geom_line()+
+    theme(legend.text=element_text(size=5)) +
+  ggtitle("Shrub Cover", x$EcoSite[1])
+  ggsave(fig_name, width=8, height=4, units = "in")
+  data.frame(success=TRUE)
+}
+```
+
+
+```{r, Generate shrub figures}
+fctgrp_shrubs %>%
+  group_by(EcoSite) %>%
+  do(make_Sbyyear_plot(.))
+
+```
+**Cacti Cover by Year and Plot**
+```{r, Create cacti dataframe}
+fctgrp_cacti <- fctgrp%>%
+  filter((FunctionalGroup %in% "CactusSucculentCoverClass_10m"),(EventPanel %in% InPanel ))%>%
+  select(EcoSite, FunctionalGroup, CoverClassMidpoint_Plot_mn, Plot, EventYear, EventPanel)
+```
+
+
+```{r, Create function to generate and paste cacti figures to directory}
+make_Cbyyear_plot <- function(x, figs_root=fig_dir) {
+  fig_name <- file.path(figs_root, paste0 ("Cactibyyear", x$EcoSite[1], ".png"))
+  ggplot(x,  aes(x=factor(EventYear), y=CoverClassMidpoint_Plot_mn
+                 , group=factor(Plot), color=factor(Plot)))+ geom_point() + geom_line() + theme(legend.text=element_text(size=5)) +
+  ggtitle("Cacti", x$EcoSite[1])
+  ggsave(fig_name, width=8, height=4, units = "in")
+  data.frame(success=TRUE)
+}
+```
+
+
+```{r, Generate cacti figures}
+fctgrp_cacti %>%
+  group_by(EcoSite) %>%
+  do(make_Cbyyear_plot(.))
+
+```
+**Annual Grass Cover by Year and Plot**
+```{r, Create annual grass dataframe}
+fctgrp_AnGra <- fctgrp%>%
+  filter((FunctionalGroup %in% "AnnualGrassCoverClass_10m"),(EventPanel %in% InPanel ))%>%
+  select(EcoSite, FunctionalGroup, CoverClassMidpoint_Plot_mn, Plot, EventYear, EventPanel)
+```
+
+
+```{r, Create function to generate and paste annual grass figures to directory}
+make_AGbyyear_plot <- function(x, figs_root=fig_dir) {
+  fig_name <- file.path(figs_root, paste0 ("AnnualGrassbyyear", x$EcoSite[1], ".png"))
+  ggplot(x,  aes(x=factor(EventYear), y=CoverClassMidpoint_Plot_mn
+                 , group=factor(Plot), color=factor(Plot)))+ geom_point() + geom_line() + theme(legend.text=element_text(size=5)) +
+  ggtitle("Annual Grass", x$EcoSite[1])
+  ggsave(fig_name, width=8, height=4, units = "in")
+  data.frame(success=TRUE)
+}
+```
+
+
+```{r, Generate annual grass figures}
+fctgrp_AnGra %>%
+  group_by(EcoSite) %>%
+  do(make_AGbyyear_plot(.))
